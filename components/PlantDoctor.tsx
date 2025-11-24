@@ -37,8 +37,9 @@ const PlantDoctor: React.FC = () => {
       const base64Data = selectedImage.split(',')[1];
       const result = await analyzePlantImage(base64Data, mimeType);
       setAnalysis(result || "No analysis returned.");
-    } catch (err) {
-      setError("Failed to analyze image. Please try again.");
+    } catch (err: any) {
+      // Display the actual error message (e.g., API Key missing)
+      setError(err.message || "Failed to analyze image. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -138,13 +139,16 @@ const PlantDoctor: React.FC = () => {
               )}
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3 my-auto">
-                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-red-900">Analysis Failed</h4>
-                    <p className="text-red-700 text-sm mt-1">{error}</p>
-                    <button onClick={handleAnalyze} className="text-red-700 text-sm font-semibold mt-2 underline">Try Again</button>
-                  </div>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 flex flex-col items-center justify-center text-center my-auto">
+                  <AlertCircle className="w-8 h-8 text-red-600 mb-3" />
+                  <h4 className="font-medium text-red-900 text-lg">Analysis Failed</h4>
+                  <p className="text-red-700 text-sm mt-2 mb-4 max-w-sm">{error}</p>
+                  <button 
+                    onClick={handleAnalyze} 
+                    className="bg-white border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-50 transition-colors shadow-sm"
+                  >
+                    Try Again
+                  </button>
                 </div>
               )}
 

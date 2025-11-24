@@ -1,12 +1,31 @@
 import { GoogleGenAI, GenerateContentResponse, Chat } from "@google/genai";
 
-// Safely retrieve API key to prevent 'process is not defined' runtime errors in browser
+// Robustly retrieve API key across different build environments (Vite, CRA, Next.js, etc.)
 const getApiKey = () => {
+  let key = '';
+  
+  // 1. Check standard process.env (Webpack, Next.js, Node)
   try {
-    return (typeof process !== 'undefined' && process.env?.API_KEY) || '';
-  } catch {
-    return '';
+    if (process.env.API_KEY) key = process.env.API_KEY;
+    else if (process.env.REACT_APP_API_KEY) key = process.env.REACT_APP_API_KEY;
+  } catch (e) {
+    // Ignore ReferenceError if process is not defined
   }
+
+  // 2. Check import.meta.env (Vite) if key is still missing
+  if (!key) {
+    try {
+      // @ts-ignore - handling Vite types gracefully without extensive config
+      if (import.meta && import.meta.env && import.meta.env.VITE_API_KEY) {
+        // @ts-ignore
+        key = import.meta.env.VITE_API_KEY;
+      }
+    } catch (e) {
+      // Ignore errors if import.meta is not supported
+    }
+  }
+
+  return key;
 };
 
 const apiKey = getApiKey();
@@ -15,7 +34,7 @@ const ai = new GoogleGenAI({ apiKey });
 // Helper to check API key
 export const checkApiKey = () => {
   if (!apiKey) {
-    console.error("API_KEY is missing. Please ensure it is set in your environment variables.");
+    console.error("API_KEY is missing. Please check your .env file or deployment environment variables.");
     return false;
   }
   return true;
@@ -23,7 +42,7 @@ export const checkApiKey = () => {
 
 // 1. Plant Doctor: Vision Analysis
 export const analyzePlantImage = async (base64Image: string, mimeType: string) => {
-  if (!checkApiKey()) throw new Error("API Key missing");
+  if (!checkApiKey()) throw new Error("API Key is missing in deployment settings.");
 
   try {
     // Using gemini-3-pro-preview for superior visual reasoning and accuracy
@@ -65,9 +84,10 @@ export const analyzePlantImage = async (base64Image: string, mimeType: string) =
       }
     });
     return response.text || "Could not analyze the image.";
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error analyzing plant:", error);
-    throw error;
+    // Throw the actual error message so the UI can display it
+    throw new Error(error.message || "Analysis service failed.");
   }
 };
 
@@ -86,7 +106,7 @@ export const initChatSession = (systemInstruction?: string) => {
 
 export const sendMessageToAdvisor = async (message: string) => {
   if (!chatSession) initChatSession();
-  if (!chatSession) throw new Error("Chat session could not be initialized");
+  if (!chatSession) throw new Error("Chat session could not be initialized (API Key missing)");
 
   try {
     const response: GenerateContentResponse = await chatSession.sendMessage({ message });
@@ -128,7 +148,7 @@ export const getMarketInsights = async (query: string) => {
 
 // 4. Weather & Location: Maps Grounding
 export const getWeatherForecast = async (lat: number, lng: number) => {
-  if (!checkApiKey()) throw new Error("API Key missing");
+  if (!checkApiKey()) throw new Error("API Key is missing in deployment.");
 
   try {
     const response = await ai.models.generateContent({
@@ -139,8 +159,9 @@ export const getWeatherForecast = async (lat: number, lng: number) => {
       }
     });
     return response.text;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Weather error:", error);
-    return "Unable to fetch weather data at this moment.";
+    // Throwing error allows the Widget to show the specific issue (e.g. Quota Exceeded)
+    throw new Error(error.message || "Unable to fetch weather data.");
   }
 };
