@@ -1,12 +1,21 @@
 import { GoogleGenAI, GenerateContentResponse, Chat } from "@google/genai";
 
-const apiKey = process.env.API_KEY || '';
+// Safely retrieve API key to prevent 'process is not defined' runtime errors in browser
+const getApiKey = () => {
+  try {
+    return (typeof process !== 'undefined' && process.env?.API_KEY) || '';
+  } catch {
+    return '';
+  }
+};
+
+const apiKey = getApiKey();
 const ai = new GoogleGenAI({ apiKey });
 
 // Helper to check API key
 export const checkApiKey = () => {
   if (!apiKey) {
-    console.error("API_KEY is missing from environment variables.");
+    console.error("API_KEY is missing. Please ensure it is set in your environment variables.");
     return false;
   }
   return true;
