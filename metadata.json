@@ -1,0 +1,9 @@
+{
+  "name": "AgroWise",
+  "description": "An AI-powered agricultural assistant helping farmers with plant disease diagnosis, real-time market insights, and personalized farming advice.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
